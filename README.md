@@ -2,6 +2,7 @@
 Simulador interativo de projeção do índice de perda e análise "What-If" para gestão de risco em fundo garantidor de crédito.
 
 📊 Simulador e Projeção de Índice de Perda (Fundo Garantidor de Crédito)
+
 ⚠️ Aviso de Confidencialidade e Segurança de Dados:
 Este projeto foi desenvolvido com base em cenários reais de análise de risco e concessão de crédito em fundos garantidores. Todos os dados, valores monetários, nomes de instituições parceiras e indicadores apresentados neste portfólio foram anonimizados e substituídos por dados sintéticos/fictícios, garantindo o sigilo das informações e a conformidade com as diretrizes de governança de dados.
 
