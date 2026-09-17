@@ -184,11 +184,138 @@ media-recuperacao_60 meses
 // ============================================================================
 
 // ============================================================================
-// 14. MEDIDA: indice-perda
+// 14. MEDIDA: index_IP
 // DESCRIÇÃO: 
 //            
 // ============================================================================
 
-indice-perda = ([vlr-honrado_60meses]-[vlr-recuperado_60meses]) / [vlr-garantido_60meses]
+index_IP = ([vlr-honrado_60meses]-[vlr-recuperado_60meses]) / [vlr-garantido_60meses]
+
+// ============================================================================
+// 15. MEDIDA: StopLoss_Dinamico_Hibrido
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+StopLoss_Dinamico_Hibrido = 
+// 1. Capturamos o que está selecionado no segmentador
+VAR vBancoSelecionado = SELECTEDVALUE(BANCOS[BCO_NOME_ANONIMO])
+
+// 2. Criamos uma condição para saber se o usuário escolheu um banco válido
+// (Não pode ser vazio e não pode estar sem seleção)
+VAR vTemSelecaoReal = NOT ISBLANK(vBancoSelecionado)
+
+RETURN
+IF(
+    vTemSelecaoReal,
+    
+    // CASO 1: Usuário selecionou um banco específico
+    MAX('Serie_Historica_STOPLOSS IF'[STOP LOSS]),
+    
+    // CASO 2: Nada selecionado (Visão Geral)
+        CALCULATE(
+        MAX('Serie_Historica_STOPLOSS GERAL'[STOPLOSS]),
+        ALL(bancos) // Garante que a tabela Geral ignore qualquer tentativa de filtro de banco
+    )
+)
+
+// ============================================================================
+// 16. MEDIDA: IP_Linha_Tendencia
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+IP_Linha_Tendencia = 
+// 1. Verifica se há um banco selecionado (evita mostrar média de vários bancos que não faz sentido)
+VAR vBancoSelecionado = HASONEVALUE(bancos[BCO_NOME_ANONIMO])
+
+// 2. Verifica se houve entrada nos parâmetros
+VAR vSomaParametros = 
+    [Valor Simu_Honra_Mensal] + 
+    [Valor Simu_Recupe_Mensal] + 
+    [Valor Simu_Garantia_Mensal]
+
+VAR vCenario = SELECTEDVALUE('Tabela_Tendencia-SIMULADOR'[Cenário])
+
+RETURN
+IF(
+    vBancoSelecionado, 
+    // Se tiver banco selecionado, executa a lógica da linha
+    IF(
+        vSomaParametros = 0 && vCenario <> "Atual", 
+        BLANK(),
+        SWITCH( vCenario,
+        "Atual", [index-IP],
+        "Mês +1", [index_IP_simulado-1],
+        "Mês +2", [index_IP_simulado-2],
+        "Mês +3", [index_IP_simulado-3],
+        "Mês +4", [index_IP_simulado-4],
+        "Mês +5", [index_IP_simulado-5],
+        "Mês +6", [index_IP_simulado-6],
+        "Mês +7", [index_IP_simulado-7],
+        "Mês +8", [index_IP_simulado-8],
+            BLANK()
+        )
+    ),
+    // Se não houver banco selecionado, retorna vazio (opcional: pode mostrar o IP Geral se preferir)
+    BLANK() 
+)
 
 
+// ============================================================================
+// 17. MEDIDA: index_IP_simulado-1
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+
+index_IP_simulado-1 = 
+VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
+VAR vDataCorte = [dt_corte]
+VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
+VAR vInicioExpurgo = vDataMesExpurgo
+VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 0) // Mudar para 1, 2, 3 nas próximas
+
+// Expurgos (Saídas reais do sistema)
+VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
+VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
+VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
+
+// Projeções (Entradas 100% garantidas)
+VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 1)
+VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 1)
+VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 1) // Multiplicar por 2, 3, 4 conforme o mês
+
+VAR vResultado = DIVIDE(vNovoHonrado - vNovoRecuperado, vNovoGarantido, 0)
+
+RETURN
+IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
+
+
+// ============================================================================
+// 17. MEDIDA: index_IP_simulado-2
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+index_IP_simulado-2 = 
+VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
+VAR vDataCorte = [dt_corte]
+VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
+VAR vInicioExpurgo = vDataMesExpurgo
+VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 1) // Mudar para 1, 2, 3 nas próximas
+
+// Expurgos (Saídas reais do sistema)
+VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
+VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
+VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
+
+// Projeções (Entradas 100% garantidas)
+VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 2)
+VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 2)
+VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 2) // Multiplicar por 2, 3, 4 conforme o mês
+
+VAR vResultado = DIVIDE(vNovoHonrado - vNovoRecuperado, vNovoGarantido, 0)
+
+RETURN
+IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
