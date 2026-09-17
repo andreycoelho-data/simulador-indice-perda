@@ -1,0 +1,36 @@
+
+//   ==========================================================================
+//   PROJETO: Simulador de Índice de Perda (Fundo Garantidor de Crédito)
+//   DOCUMENTAÇÃO DE MEDIDAS DAX (DADOS ANONIMIZADOS)
+//   ==========================================================================
+
+
+// ============================================================================
+// 01. MEDIDA: dt_intv_infr
+// DESCRIÇÃO: Cálculo do intervalo de datas (janela dos últimos 60 meses) com 
+//            base na última operação do banco selecionado anonimizado.
+// ============================================================================
+
+  dt_intv_infr = 
+VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
+RETURN
+IF(
+    vBancoSelecionado, 
+    VAR vUltimaDataOp = CALCULATE(MAX(operacoes[OPE_DATAINICIO]))
+    VAR vDataFim = IF(NOT ISBLANK(vUltimaDataOp), EOMONTH(vUltimaDataOp, 0))
+    VAR vDataInicio = IF(NOT ISBLANK(vDataFim), EDATE(vDataFim, -60) + 1)
+    RETURN
+    IF(
+        ISBLANK(vDataFim), 
+        "-", 
+        FORMAT(vDataInicio, "dd/mm/yyyy") & " a " & FORMAT(vDataFim, "dd/mm/yyyy")
+    ),
+    "-"
+)
+
+    
+// ============================================================================
+// 02. MEDIDA:
+// DESCRIÇÃO:  
+//            
+// ============================================================================
