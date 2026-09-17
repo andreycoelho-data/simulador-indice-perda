@@ -30,7 +30,155 @@ IF(
 
     
 // ============================================================================
-// 02. MEDIDA:
+// 02. MEDIDA: vlr-garantido
 // DESCRIÇÃO:  
+//            
+// ============================================================================
+
+vlr-garantido = 
+CALCULATE(
+    SUM(OPERACOES[OPE_VALORGARANTIA]),
+        FILTER(
+        OPERACOES,
+        NOT(
+            OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15} 
+            )
+        ))
+
+// ============================================================================
+// 03. MEDIDA: vlr-garantido_60meses
+// DESCRIÇÃO:  
+//
+// ============================================================================
+
+vlr-garantido_60meses = 
+VAR DataFinal = EOMONTH(MAX(dCalendario[Date]),0)
+VAR DataInicial = EOMONTH(DataFinal,-60)+1
+
+RETURN
+    CALCULATE(
+        [vlr-garantido],
+            dCalendario[Date] >= DataInicial && dCalendario[Date] <= DataFinal
+    )
+
+// ============================================================================
+// 04. MEDIDA: media-garantia_60meses
+// DESCRIÇÃO:  
+//            
+// ============================================================================
+
+media-garantia_60meses = [vlr-garantido_60meses] / 60
+
+// ============================================================================
+// 05. MEDIDA: vlr-honrado
+// DESCRIÇÃO:  
+//            
+// ============================================================================
+
+vlr-honrado = 
+CALCULATE(
+    SUM(OPERACOES[OPE_VALOREFETIVOHONRA]),
+    USERELATIONSHIP(
+        dCalendario[Date],
+        OPERACOES[OPE_DATAEFETIVAHONRA]
+    ),
+    not (OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15} //Cancelados (12); Transf. de Agência (14); Renegociada (15) )
+            )
+)
+
+// ============================================================================
+// 06. MEDIDA: vlr-honrado_60meses
+// DESCRIÇÃO:  
+//            
+// ============================================================================
+
+vlr-honrado_60meses = 
+VAR DataFinal = EOMONTH(MAX(dCalendario[Date]),0)
+VAR DataInicial = EOMONTH(DataFinal,-60)+1
+
+RETURN
+    CALCULATE (
+        [vlr-honrado],
+        USERELATIONSHIP(
+            dCalendario[Date],
+            OPERACOES[OPE_DATAEFETIVAHONRA]
+        ),
+        DATESBETWEEN ( dCalendario[Date], DataInicial, DataFinal )
+    )
+
+// ============================================================================
+// 07. MEDIDA: media-honra_60 meses
+// DESCRIÇÃO:  
+//            
+// ============================================================================
+
+media-honra_60 meses = [vlr-honrado_60meses] / 60
+
+// ============================================================================
+// 08. MEDIDA: vlr-recuperacao
+// DESCRIÇÃO:  
+//            
+// ============================================================================
+
+vlr-recuperado = CALCULATE(
+    SUM(VALOR_RECUPERADO[VLRRECUPERADO]),
+    USERELATIONSHIP(
+        dCalendario[Date],
+        VALOR_RECUPERADO[EXT_DATALANCAMENTO]
+    ),
+     NOT(
+            OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15} 
+            ))
+
+// ============================================================================
+// 09. MEDIDA: vlr-recuperado_60meses
+// DESCRIÇÃO:  
+//            
+// ============================================================================
+
+rec-valor_60meses = 
+VAR DataFinal = EOMONTH(MAX(dCalendario[Date]),0)
+VAR DataInicial = EOMONTH(DataFinal,-60)+1
+
+RETURN
+    CALCULATE(
+        SUM(
+            VALOR_RECUPERADO[VLRRECUPERADO]
+        ),
+        USERELATIONSHIP(
+            dCalendario[Date],
+            VALOR_RECUPERADO[EXT_DATALANCAMENTO]
+        ),
+        DATESBETWEEN ( dCalendario[Date], DataInicial, DataFinal ),
+     NOT(
+            OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15} //Cancelados (12); Transf. de Agência (14); Renegociada (15)
+            ))
+
+// ============================================================================
+// 10. MEDIDA: media-recuperacao_60 meses
+// DESCRIÇÃO:  
+//            
+// ============================================================================
+
+media-recuperacao_60 meses
+
+// ============================================================================
+// 11. PARÂMETRO: Simu_Garantia_Mensal
+//     MEDIDA: Valor Simu_Garantia_Mensal = SELECTEDVALUE('Simu_Garantia_Mensal'[Simu_Garantia_Mensal], 0)
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+// ============================================================================
+// 12. PARÂMETRO: Simu_Honra_Mensal = GENERATESERIES(0, 10000000, 10000)
+//     MEDIDA: Valor Simu_Honra_Mensal = SELECTEDVALUE('Simu_Honra_Mensal'[Simu_Honra_Mensal], 0)
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+// ============================================================================
+// 13. PARÂMETRO: Simu_Recupe_Mensal = GENERATESERIES(0, 500000, 5000)
+//     MEDIDA: Valor Simu_Recupe_Mensal = SELECTEDVALUE('Simu_Recupe_Mensal'[Simu_Recupe_Mensal], 0)
+// DESCRIÇÃO: 
 //            
 // ============================================================================
