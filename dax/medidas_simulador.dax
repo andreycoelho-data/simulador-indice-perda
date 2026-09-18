@@ -1,17 +1,18 @@
-
-//   ==========================================================================
-//   PROJETO: Simulador de Índice de Perda (Fundo Garantidor de Crédito)
-//   DOCUMENTAÇÃO DE MEDIDAS DAX (DADOS ANONIMIZADOS)
-//   ==========================================================================
+/* ============================================================================
+   PROJETO: Simulador de Índice de Perda (Fundo Garantidor de Crédito)
+   DOCUMENTAÇÃO COMPLETA DE MEDIDAS DAX E PARÂMETROS
+   AUTOR: Analista de Dados
+   ============================================================================ */
 
 
 // ============================================================================
 // 01. MEDIDA: dt_intv_infr
-// DESCRIÇÃO: Cálculo do intervalo de datas (janela dos últimos 60 meses) com 
-//            base na última operação do banco selecionado anonimizado.
+// DESCRIÇÃO: Retorna o intervalo textual de datas formatado (dd/mm/yyyy a dd/mm/yyyy)
+//            representando a janela móvel de 60 meses até a última operação registrada 
+//            para o banco anonimizado selecionado.
 // ============================================================================
 
-  dt_intv_infr = 
+dt_intv_infr = 
 VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
 RETURN
 IF(
@@ -28,27 +29,25 @@ IF(
     "-"
 )
 
-    
+
 // ============================================================================
 // 02. MEDIDA: vlr-garantido
-// DESCRIÇÃO:  
-//            
+// DESCRIÇÃO: Soma do valor total de garantia concedida nas operações ativas, 
+//            excluindo status operacionais nulos/inválidos (Cancelados: 12, 
+//            Transferidos: 14 e Renegociados: 15).
 // ============================================================================
 
 vlr-garantido = 
 CALCULATE(
     SUM(OPERACOES[OPE_VALORGARANTIA]),
-        FILTER(
-        OPERACOES,
-        NOT(
-            OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15} 
-            )
-        ))
+    NOT(OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15})
+)
+
 
 // ============================================================================
 // 03. MEDIDA: vlr-garantido_60meses
-// DESCRIÇÃO:  
-//
+// DESCRIÇÃO: Calcula o montante total de valor garantido acumulado estritamente 
+//            dentro da janela móvel retroativa dos últimos 60 meses.
 // ============================================================================
 
 vlr-garantido_60meses = 
@@ -58,21 +57,24 @@ VAR DataInicial = EOMONTH(DataFinal,-60)+1
 RETURN
     CALCULATE(
         [vlr-garantido],
-            dCalendario[Date] >= DataInicial && dCalendario[Date] <= DataFinal
+        dCalendario[Date] >= DataInicial && dCalendario[Date] <= DataFinal
     )
+
 
 // ============================================================================
 // 04. MEDIDA: media-garantia_60meses
-// DESCRIÇÃO:  
-//            
+// DESCRIÇÃO: Média mensal do valor garantido calculada dividindo o acumulado de 
+//            60 meses pela quantidade total de meses do período móvel (60).
 // ============================================================================
 
 media-garantia_60meses = [vlr-garantido_60meses] / 60
 
+
 // ============================================================================
 // 05. MEDIDA: vlr-honrado
-// DESCRIÇÃO:  
-//            
+// DESCRIÇÃO: Soma do valor efetivamente honrado pelo fundo garantidor, utilizando 
+//            relacionamento inativo com a dCalendario via Data Efetiva de Honra e 
+//            desconsiderando status não operacionais (12, 14, 15).
 // ============================================================================
 
 vlr-honrado = 
@@ -82,14 +84,14 @@ CALCULATE(
         dCalendario[Date],
         OPERACOES[OPE_DATAEFETIVAHONRA]
     ),
-    not (OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15} //Cancelados (12); Transf. de Agência (14); Renegociada (15) )
-            )
+    NOT(OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15})
 )
+
 
 // ============================================================================
 // 06. MEDIDA: vlr-honrado_60meses
-// DESCRIÇÃO:  
-//            
+// DESCRIÇÃO: Calcula o volume total de honras efetivadas no intervalo de 60 meses 
+//            móveis com base na data de honra.
 // ============================================================================
 
 vlr-honrado_60meses = 
@@ -106,34 +108,36 @@ RETURN
         DATESBETWEEN ( dCalendario[Date], DataInicial, DataFinal )
     )
 
+
 // ============================================================================
 // 07. MEDIDA: media-honra_60 meses
-// DESCRIÇÃO:  
-//            
+// DESCRIÇÃO: Média mensal do valor de honras executadas no período móvel de 60 meses.
 // ============================================================================
 
 media-honra_60 meses = [vlr-honrado_60meses] / 60
 
+
 // ============================================================================
 // 08. MEDIDA: vlr-recuperado
-// DESCRIÇÃO:  
-//            
+// DESCRIÇÃO: Soma dos valores de créditos recuperados pós-honra através do 
+//            relacionamento ativo pela Data de Lançamento do Extrato.
 // ============================================================================
 
-vlr-recuperado = CALCULATE(
+vlr-recuperado = 
+CALCULATE(
     SUM(VALOR_RECUPERADO[VLRRECUPERADO]),
     USERELATIONSHIP(
         dCalendario[Date],
         VALOR_RECUPERADO[EXT_DATALANCAMENTO]
     ),
-     NOT(
-            OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15} 
-            ))
+    NOT(OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15})
+)
+
 
 // ============================================================================
 // 09. MEDIDA: vlr-recuperado_60meses
-// DESCRIÇÃO:  
-//            
+// DESCRIÇÃO: Montante total recuperado pelo fundo garantidor restrito à janela 
+//            móvel de 60 meses.
 // ============================================================================
 
 vlr-recuperado_60meses = 
@@ -142,92 +146,111 @@ VAR DataInicial = EOMONTH(DataFinal,-60)+1
 
 RETURN
     CALCULATE(
-        SUM(
-            VALOR_RECUPERADO[VLRRECUPERADO]
-        ),
+        SUM(VALOR_RECUPERADO[VLRRECUPERADO]),
         USERELATIONSHIP(
             dCalendario[Date],
             VALOR_RECUPERADO[EXT_DATALANCAMENTO]
         ),
         DATESBETWEEN ( dCalendario[Date], DataInicial, DataFinal ),
-     NOT(
-            OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15} //Cancelados (12); Transf. de Agência (14); Renegociada (15)
-            ))
+        NOT(OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15})
+    )
+
 
 // ============================================================================
 // 10. MEDIDA: media-recuperacao_60 meses
-// DESCRIÇÃO:  
-//            
+// DESCRIÇÃO: Média mensal de recuperação de crédito obtida dividindo o total 
+//            recuperado em 60 meses por 60.
 // ============================================================================
 
-media-recuperacao_60 meses
+media-recuperacao_60 meses = [vlr-recuperado_60meses] / 60
+
 
 // ============================================================================
 // 11. PARÂMETRO: Simu_Garantia_Mensal
-//     MEDIDA: Valor Simu_Garantia_Mensal = SELECTEDVALUE('Simu_Garantia_Mensal'[Simu_Garantia_Mensal], 0)
-// DESCRIÇÃO: 
-//            
+// DESCRIÇÃO: Parâmetro What-If de entrada do usuário para simulação de concessão 
+//            mensal fictícia de novas garantias.
 // ============================================================================
 
-// ============================================================================
-// 12. PARÂMETRO: Simu_Honra_Mensal = GENERATESERIES(0, 10000000, 10000)
-//     MEDIDA: Valor Simu_Honra_Mensal = SELECTEDVALUE('Simu_Honra_Mensal'[Simu_Honra_Mensal], 0)
-// DESCRIÇÃO: 
-//            
-// ============================================================================
+Simu_Garantia_Mensal = GENERATESERIES(0, 100000000, 250000)
+Valor Simu_Garantia_Mensal = SELECTEDVALUE('Simu_Garantia_Mensal'[Simu_Garantia_Mensal], 0)
+
 
 // ============================================================================
-// 13. PARÂMETRO: Simu_Recupe_Mensal = GENERATESERIES(0, 500000, 5000)
-//     MEDIDA: Valor Simu_Recupe_Mensal = SELECTEDVALUE('Simu_Recupe_Mensal'[Simu_Recupe_Mensal], 0)
-// DESCRIÇÃO: 
-//            
+// 12. PARÂMETRO: Simu_Honra_Mensal
+// DESCRIÇÃO: Parâmetro What-If para inclusão de estimativa mensal de novas honras 
+//            (inadimplência simulada).
 // ============================================================================
+
+Simu_Honra_Mensal = GENERATESERIES(0, 10000000, 10000)
+Valor Simu_Honra_Mensal = SELECTEDVALUE('Simu_Honra_Mensal'[Simu_Honra_Mensal], 0)
+
+
+// ============================================================================
+// 13. PARÂMETRO: Simu_Recupe_Mensal
+// DESCRIÇÃO: Parâmetro What-If para inserção de projeção mensal de recuperação de ativos.
+// ============================================================================
+
+Simu_Recupe_Mensal = GENERATESERIES(0, 500000, 5000)
+Valor Simu_Recupe_Mensal = SELECTEDVALUE('Simu_Recupe_Mensal'[Simu_Recupe_Mensal], 0)
+
 
 // ============================================================================
 // 14. MEDIDA: index_IP
-// DESCRIÇÃO: 
-//            
+// DESCRIÇÃO: Índice de Perda (IP) Real da carteira. Calculado como o Perda Líquida 
+//            (Honras - Recuperações) dividido pelo Valor Garantido Total em 60 meses.
 // ============================================================================
 
-index_IP = ([vlr-honrado_60meses]-[vlr-recuperado_60meses]) / [vlr-garantido_60meses]
+index_IP = DIVIDE([vlr-honrado_60meses] - [vlr-recuperado_60meses], [vlr-garantido_60meses], 0)
+
 
 // ============================================================================
 // 15. MEDIDA: StopLoss_Dinamico_Hibrido
-// DESCRIÇÃO: 
-//            
+// DESCRIÇÃO: Retorna dinamicamente o histórico do Índice de Perda operacional da instituição financeira
+//            selecionada ou a régua geral do Fundo se não houver seleção única.
 // ============================================================================
 
 StopLoss_Dinamico_Hibrido = 
-VAR vBancoSelecionado = SELECTEDVALUE(BANCOS[BCO_NOME_ANONIMO])
-
-// (Não pode ser vazio e não pode estar sem seleção)
-VAR vTemSelecaoReal = NOT ISBLANK(vBancoSelecionado)
+VAR vBancoAnonimoSelecionado = SELECTEDVALUE(BANCOS[BCO_NOME_ANONIMO])
+VAR vTemSelecaoUnica = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
 
 RETURN
 IF(
-    vTemSelecaoReal,
-    
-    // CASO 1: Usuário selecionou um banco específico
-    MAX('Serie_Historica_STOPLOSS IF'[STOP LOSS]),
-    
-    // CASO 2: Nada selecionado (Visão Geral)
-        CALCULATE(
+    vTemSelecaoUnica && NOT ISBLANK(vBancoAnonimoSelecionado),
+    CALCULATE(
+        MAX('Serie_Historica_STOPLOSS IF'[STOP LOSS]),
+        KEEPFILTERS(BANCOS)
+    ),
+    CALCULATE(
         MAX('Serie_Historica_STOPLOSS GERAL'[STOPLOSS]),
-        ALL(bancos)
+        REMOVEFILTERS(BANCOS)
     )
 )
 
+
 // ============================================================================
-// 16. MEDIDA: IP_Linha_Tendencia
-// DESCRIÇÃO: 
-//            
+// 16. MEDIDA: dt_corte
+// DESCRIÇÃO: Identifica a menor data máxima convergente entre garantias, honras 
+//            e recuperações, estabelecendo a linha base segura para fechamento e projeções.
+// ============================================================================
+
+dt_corte = 
+VAR vUltimaGarantia = CALCULATE(MAX(OPERACOES[OPE_DATAINICIO]), ALL(operacoes))
+VAR vUltimaHonra = CALCULATE(MAX(OPERACOES[OPE_DATAEFETIVAHONRA]), ALL(operacoes))
+VAR vUltimaRecup = CALCULATE(MAX(VALOR_RECUPERADO[EXT_DATALANCAMENTO]), ALL(VALOR_RECUPERADO))
+
+VAR vDataMinimaDasMaximas = MINX({vUltimaGarantia, vUltimaHonra, vUltimaRecup}, [Value])
+RETURN vDataMinimaDasMaximas
+
+
+// ============================================================================
+// 17. MEDIDA: IP_Linha_Tendencia
+// DESCRIÇÃO: Medida de controle para alimentar o gráfico de linhas de projeção. 
+//            Mapeia o Cenário selecionado no eixo X ("Atual" até "Mês +8") e 
+//            retorna o respectivo valor simulado de Índice de Perda.
 // ============================================================================
 
 IP_Linha_Tendencia = 
-// 1. Verifica se há um banco selecionado (evita mostrar média de vários bancos que não faz sentido)
 VAR vBancoSelecionado = HASONEVALUE(bancos[BCO_NOME_ANONIMO])
-
-// 2. Verifica se houve entrada nos parâmetros
 VAR vSomaParametros = 
     [Valor Simu_Honra_Mensal] + 
     [Valor Simu_Recupe_Mensal] + 
@@ -238,51 +261,48 @@ VAR vCenario = SELECTEDVALUE('Tabela_Tendencia-SIMULADOR'[Cenário])
 RETURN
 IF(
     vBancoSelecionado, 
-    // Se tiver banco selecionado, executa a lógica da linha
     IF(
         vSomaParametros = 0 && vCenario <> "Atual", 
         BLANK(),
         SWITCH( vCenario,
-        "Atual", [index-IP],
-        "Mês +1", [index_IP_simulado-1],
-        "Mês +2", [index_IP_simulado-2],
-        "Mês +3", [index_IP_simulado-3],
-        "Mês +4", [index_IP_simulado-4],
-        "Mês +5", [index_IP_simulado-5],
-        "Mês +6", [index_IP_simulado-6],
-        "Mês +7", [index_IP_simulado-7],
-        "Mês +8", [index_IP_simulado-8],
+            "Atual", [index_IP],
+            "Mês +1", [index_IP_simulado-1],
+            "Mês +2", [index_IP_simulado-2],
+            "Mês +3", [index_IP_simulado-3],
+            "Mês +4", [index_IP_simulado-4],
+            "Mês +5", [index_IP_simulado-5],
+            "Mês +6", [index_IP_simulado-6],
+            "Mês +7", [index_IP_simulado-7],
+            "Mês +8", [index_IP_simulado-8],
             BLANK()
         )
     ),
-    // Se não houver banco selecionado, retorna vazio (opcional: pode mostrar o IP Geral se preferir)
     BLANK() 
 )
 
 
 // ============================================================================
-// 17. MEDIDA: index_IP_simulado-1
-// DESCRIÇÃO: 
-//            
+// 18 A 25. MEDIDAS DE PROJEÇÃO SIMULADA (Mês +1 até Mês +8)
+// DESCRIÇÃO MODELO: Aplica a lógica de expurgo do mês mais antigo da janela de 60 meses 
+//                  (vHonraSair, vRecupSair, vGarantiaSair) e adiciona os novos parâmetros 
+//                  simulados multiplicados pela quantidade do horizonte futuro (1 a 8 meses).
 // ============================================================================
 
-
+// --- MÊS +1 ---
 index_IP_simulado-1 = 
 VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
 VAR vDataCorte = [dt_corte]
 VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
 VAR vInicioExpurgo = vDataMesExpurgo
-VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 0) // Mudar para 1, 2, 3 nas próximas
+VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 0)
 
-// Expurgos (Saídas reais do sistema)
 VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
 VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
 VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
 
-// Projeções (Entradas 100% garantidas)
 VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 1)
 VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 1)
-VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 1) // Multiplicar por 2, 3, 4 conforme o mês
+VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 1)
 
 VAR vResultado = DIVIDE(vNovoHonrado - vNovoRecuperado, vNovoGarantido, 0)
 
@@ -290,12 +310,7 @@ RETURN
 IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
 
 
-// ============================================================================
-// 17. MEDIDA: index_IP_simulado-2
-// DESCRIÇÃO: 
-//            
-// ============================================================================
-
+// --- MÊS +2 ---
 index_IP_simulado-2 = 
 VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
 VAR vDataCorte = [dt_corte]
@@ -303,12 +318,10 @@ VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
 VAR vInicioExpurgo = vDataMesExpurgo
 VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 1)
 
-// Expurgos (Saídas reais do sistema)
 VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
 VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
 VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
 
-// Projeções (Entradas 100% garantidas)
 VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 2)
 VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 2)
 VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 2)
@@ -319,12 +332,7 @@ RETURN
 IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
 
 
-// ============================================================================
-// 17. MEDIDA: index_IP_simulado-3
-// DESCRIÇÃO: 
-//            
-// ============================================================================
-
+// --- MÊS +3 ---
 index_IP_simulado-3 = 
 VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
 VAR vDataCorte = [dt_corte]
@@ -332,12 +340,10 @@ VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
 VAR vInicioExpurgo = vDataMesExpurgo
 VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 2)
 
-// Expurgos (Saídas reais do sistema)
 VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
 VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
 VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
 
-// Projeções (Entradas 100% garantidas)
 VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 3)
 VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 3)
 VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 3)
@@ -348,12 +354,7 @@ RETURN
 IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
 
 
-// ============================================================================
-// 17. MEDIDA: index_IP_simulado-4
-// DESCRIÇÃO: 
-//            
-// ============================================================================
-
+// --- MÊS +4 ---
 index_IP_simulado-4 = 
 VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
 VAR vDataCorte = [dt_corte]
@@ -361,12 +362,10 @@ VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
 VAR vInicioExpurgo = vDataMesExpurgo
 VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 3)
 
-// Expurgos (Saídas reais do sistema)
 VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
 VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
 VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
 
-// Projeções (Entradas 100% garantidas)
 VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 4)
 VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 4)
 VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 4)
@@ -377,12 +376,7 @@ RETURN
 IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
 
 
-// ============================================================================
-// 17. MEDIDA: index_IP_simulado-5
-// DESCRIÇÃO: 
-//            
-// ============================================================================
-
+// --- MÊS +5 ---
 index_IP_simulado-5 = 
 VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
 VAR vDataCorte = [dt_corte]
@@ -390,12 +384,10 @@ VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
 VAR vInicioExpurgo = vDataMesExpurgo
 VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 4)
 
-// Expurgos (Saídas reais do sistema)
 VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
 VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
 VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
 
-// Projeções (Entradas 100% garantidas)
 VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 5)
 VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 5)
 VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 5)
@@ -406,12 +398,7 @@ RETURN
 IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
 
 
-// ============================================================================
-// 17. MEDIDA: index_IP_simulado-6
-// DESCRIÇÃO: 
-//            
-// ============================================================================
-
+// --- MÊS +6 ---
 index_IP_simulado-6 = 
 VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
 VAR vDataCorte = [dt_corte]
@@ -419,12 +406,10 @@ VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
 VAR vInicioExpurgo = vDataMesExpurgo
 VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 5)
 
-// Expurgos (Saídas reais do sistema)
 VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
 VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
 VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
 
-// Projeções (Entradas 100% garantidas)
 VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 6)
 VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 6)
 VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 6)
@@ -435,12 +420,7 @@ RETURN
 IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
 
 
-// ============================================================================
-// 17. MEDIDA: index_IP_simulado-7
-// DESCRIÇÃO: 
-//            
-// ============================================================================
-
+// --- MÊS +7 ---
 index_IP_simulado-7 = 
 VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
 VAR vDataCorte = [dt_corte]
@@ -448,12 +428,10 @@ VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
 VAR vInicioExpurgo = vDataMesExpurgo
 VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 6)
 
-// Expurgos (Saídas reais do sistema)
 VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
 VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
 VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
 
-// Projeções (Entradas 100% garantidas)
 VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 7)
 VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 7)
 VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 7)
@@ -464,12 +442,7 @@ RETURN
 IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
 
 
-// ============================================================================
-// 17. MEDIDA: index_IP_simulado-8
-// DESCRIÇÃO: 
-//            
-// ============================================================================
-
+// --- MÊS +8 ---
 index_IP_simulado-8 = 
 VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
 VAR vDataCorte = [dt_corte]
@@ -477,12 +450,10 @@ VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
 VAR vInicioExpurgo = vDataMesExpurgo
 VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 7)
 
-// Expurgos (Saídas reais do sistema)
 VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
 VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
 VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
 
-// Projeções (Entradas 100% garantidas)
 VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 8)
 VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 8)
 VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 8)
@@ -494,30 +465,26 @@ IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
 
 
 // ============================================================================
-// 22. MEDIDA: Titulo_Grafico_Historico
-// DESCRIÇÃO: 
-//            
+// 26. MEDIDA: Titulo_Grafico_Historico
+// DESCRIÇÃO: Título dinâmico para o gráfico histórico que altera o rótulo da tela 
+//            de acordo com o banco selecionado ou exibe visão consolidada do Fundo.
 // ============================================================================
 
 Titulo_Grafico_Historico = 
-// 1. Capturamos o nome do banco selecionado
 VAR vBanco = SELECTEDVALUE(BANCOS[BCO_NOME_ANONIMO])
 
 RETURN
 IF(
     ISBLANK(vBanco),
-    // Caso não tenha seleção (ou seja o "vazio" que corrigimos)
     "Histórico Índice de Perda - FUNDO",
-    
-    // Caso tenha um banco selecionado (concatenamos o texto com o nome)
     "Histórico Índice de Perda - " & vBanco
 )
 
 
 // ============================================================================
-// 23. MEDIDA: Titulo_Grafico_Simulacao
-// DESCRIÇÃO: 
-//            
+// 27. MEDIDA: Titulo_Grafico_Simulacao
+// DESCRIÇÃO: Título dinâmico para a área de projeção que orienta o usuário a inserir 
+//            parâmetros ou confirma a exibição da tendência dos próximos 8 meses.
 // ============================================================================
 
 Titulo_Grafico_Simulacao = 
@@ -526,23 +493,3 @@ IF(
     "Aguardando Parâmetros para Projeção do Índice de Perda...",
     "Tendência do Índice de Perda (Próximos 8 meses)"
 )
-
-
-// ============================================================================
-// 24. MEDIDA: dt_corte
-// DESCRIÇÃO: 
-//            
-// ============================================================================
-
-dt_corte = 
-VAR vUltimaGarantia = CALCULATE(MAX(OPERACOES[OPE_DATAINICIO]), ALL(operacoes))
-VAR vUltimaHonra = CALCULATE(MAX(OPERACOES[OPE_DATAEFETIVAHONRA]), ALL(operacoes))
-VAR vUltimaRecup = CALCULATE(MAX(VALOR_RECUPERADO[EXT_DATALANCAMENTO]), ALL(VALOR_RECUPERADO[VLRRECUPERADO]))
-
-// Retorna o menor entre os três, garantindo que todos tenham dados até ali
-VAR vDataMinimaDasMaximas = MINX({vUltimaGarantia, vUltimaHonra, vUltimaRecup}, [Value])
-
-// Retorna o último dia do mês dessa data
-RETURN EOMONTH(vDataMinimaDasMaximas, 0)
-
-
