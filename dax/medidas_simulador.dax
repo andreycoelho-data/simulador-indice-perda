@@ -493,3 +493,58 @@ VAR vResultado = DIVIDE(vNovoHonrado - vNovoRecuperado, vNovoGarantido, 0)
 
 RETURN
 IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
+
+
+// ============================================================================
+// 22. MEDIDA: Titulo_Grafico_Historico
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+Titulo_Grafico_Historico = 
+// 1. Capturamos o nome do banco selecionado
+VAR vBanco = SELECTEDVALUE(BANCOS[BCO_NOME_ANONIMO])
+
+RETURN
+IF(
+    ISBLANK(vBanco),
+    // Caso não tenha seleção (ou seja o "vazio" que corrigimos)
+    "Histórico Índice de Perda - FUNDO",
+    
+    // Caso tenha um banco selecionado (concatenamos o texto com o nome)
+    "Histórico Índice de Perda - " & vBanco
+)
+
+
+// ============================================================================
+// 23. MEDIDA: Titulo_Grafico_Simulacao
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+Titulo_Grafico_Simulacao = 
+IF(
+    [Valor Simu_Honra_Mensal] + [Valor Simu_Recupe_Mensal] + [Valor Simu_Garantia_Mensal] = 0,
+    "Aguardando Parâmetros para Projeção do Índice de Perda...",
+    "Tendência do Índice de Perda (Próximos 8 meses)"
+)
+
+
+// ============================================================================
+// 24. MEDIDA: dt_corte
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+dt_corte = 
+VAR vUltimaGarantia = CALCULATE(MAX(operacoes[OPE_DATAINICIO]), ALL(operacoes))
+VAR vUltimaHonra = CALCULATE(MAX(operacoes[OPE_DATAEFETIVAHONRA]), ALL(operacoes))
+VAR vUltimaRecup = CALCULATE(MAX(VALOR_RECUPERADO[EXT_DATALANCAMENTO]), ALL(VALOR_RECUPERADO[VLRRECUPERADO]))
+
+// Retorna o menor entre os três, garantindo que todos tenham dados até ali
+VAR vDataMinimaDasMaximas = MINX({vUltimaGarantia, vUltimaHonra, vUltimaRecup}, [Value])
+
+// Retorna o último dia do mês dessa data
+RETURN EOMONTH(vDataMinimaDasMaximas, 0)
+
+
