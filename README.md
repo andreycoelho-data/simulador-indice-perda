@@ -1,43 +1,59 @@
-# simulador-indice-perda
-Simulador interativo de projeção do índice de perda e análise "What-If" para gestão de risco em fundo garantidor de crédito.
+# 📈 Simulador e Projeção de Índice de Perda (Fundo Garantidor)
 
-📊 Simulador e Projeção de Índice de Perda (Fundo Garantidor de Crédito)
+![Power BI](https://img.shields.io/badge/Power_BI-F2C811?style=for-the-badge&logo=power-bi&logoColor=black)
+![DAX](https://img.shields.io/badge/DAX-00599C?style=for-the-badge&logo=microsoft&logoColor=white)
+![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
+![Governance](https://img.shields.io/badge/Data_Governance-LGPD-green?style=for-the-badge)
 
-⚠️ Aviso de Confidencialidade e Segurança de Dados:
-Este projeto foi desenvolvido com base em cenários reais de análise de risco e concessão de crédito em fundos garantidores. Todos os dados, valores monetários, nomes de instituições parceiras e indicadores apresentados neste portfólio foram anonimizados e substituídos por dados sintéticos/fictícios, garantindo o sigilo das informações e a conformidade com as diretrizes de governança de dados.
+## 📌 Visão Geral do Projeto
 
-1. Contexto
-Em fundos garantidores de crédito, a manutenção de uma carteira saudável depende do monitoramento constante do volume de honras/inadimplência e do limite operacional aceitável por instituição financeira parceira. A ultrapassagem desse limite (Stop Loss) gera retrabalho, sanções operacionais e riscos à liquidez do fundo.
+Este projeto consiste em uma solução analítica e simuladora desenvolvida em **Power BI** para monitoramento e projeção do **Índice de Perda (IP)** de um Fundo Garantidor de Crédito. 
 
-2. Problema
-Os gestores de carteira necessitavam de uma ferramenta preditiva e de simulação em tempo real para avaliar o impacto das novas concessões e das estimativas de perda nos próximos 8 meses. Sem uma visão preditiva interativa, as negociações com as instituições financeiras operavam de forma reativa, aumentando a probabilidade de a carteira atingir a margem de Stop Loss.
+O objetivo principal é permitir que gestores de risco avaliem o impacto de novos aportes, estimativas de honras (inadimplência) e recuperação de ativos nos próximos **8 meses**, garantindo que a carteira permaneça dentro dos limites operacionais de *Stop Loss*.
 
-3. Abordagem
-Ferramenta Principal: Power BI (DAX Avançado, Parâmetros de Campos/O que acontece se, Power Query).
+> 🔒 **Nota de Governança e Compliance:** Para preservar a confidencialidade das instituições financeiras parceiras e dos volumes financeiros do Fundo, os dados passaram por um rigoroso processo de anonimização (desvinculação de nomes de bancos para chaves genéricas como *Banco 01, Banco 02*) e aplicação de fatores de escala nas métricas numéricas.
 
-Modelagem: Integração do modelo semântico corporativo com tabelas de parâmetros customizadas para simulação de cenários.
+---
 
-Métricas-Chave: Saldo Devedor Projetado, Taxa Média de Inadimplência Histórica, Projeção de Perda Futura (8 meses), Margem até o Stop Loss.
+## 🛠️ Solução Técnica & Arquitetura DAX
 
-4. Análise / Solução
-Desenvolvimento de um Dashboard Simulador Interativo que permite aos gestores:
+O painel foi estruturado sobre um modelo de dados dinâmico, utilizando conceitos avançados de **janela móvel de 60 meses**, **expurgo rolante de dados históricos** e **parâmetros de simulação (What-If)**.
 
-Inserir e alterar parâmetros de projeção de perda diretamente nos visuais.
+### 💡 Principais Destaques de Implementação:
 
-Projetar dinamicamente a variação do índice de perda mês a mês para uma janela futura de 8 meses.
+* **Janela Móvel Temporal (60 Meses):** Cálculo contínuo dos últimos 5 anos de operação para determinar a taxa de sinistralidade real por instituição.
+* **Algoritmo de Expurgo e Projeção:** À medida que a simulação avança nos meses ($Mês +1$ até $Mês +8$), a lógica DAX expurga os meses mais antigos do histórico real e adiciona os novos fluxos simulados.
+* **Stop Loss Híbrido:** Regra de negócio que alterna dinamicamente a régua de limite regulamentar de acordo com a seleção do usuário (Visão Individual do Banco vs. Visão Consolidada do Fundo).
+* **Parâmetros What-If Dinâmicos:** Interface interativa que permite simular em tempo real os volumes de *Garantia Mensal*, *Honra Mensal* e *Recuperação Mensal*.
 
-Comparar o índice projetado contra o teto do Stop Loss estabelecido no regulamento.
+---
 
-Simular diferentes cenários de ajuste na carteira junto às instituições parceiras antes do fechamento do ciclo.
+## 📂 Estrutura das Medidas DAX
 
-5. Principais Achados / Impacto
-Antecipação de Riscos: Capacidade de identificar potenciais estouros de limite (Stop Loss) com até 8 meses de antecedência.
+As regras de negócio e fórmulas de projeção foram documentadas e consolidadas no repositório. A arquitetura divide-se nas seguintes categorias:
 
-Apoio a Negociações Estratégicas: Empoderamento dos gestores com dados simulados durante reuniões de alinhamento com instituições financeiras.
+| Categoria | Descrição / Lógica de Negócio | Medidas Chave |
+| :--- | :--- | :--- |
+| **Métricas Base** | Apuração dos volumes históricos de Garantia, Honra e Recuperação na janela de 60 meses. | `vlr-garantido_60meses`, `vlr-honrado_60meses`, `vlr-recuperado_60meses` |
+| **Régua de Risco** | Identificação dinâmica do teto tático de *Stop Loss* por instituição financeira. | `StopLoss_Dinamico_Hibrido`, `dt_corte` |
+| **Motor de Projeção** | Cálculo de expurgo retroativo + incremento dos parâmetros *What-If* para o horizonte de 8 meses. | `IP_Linha_Tendencia`, `index_IP_simulado-1` a `8` |
+| **UX & Dinâmica** | Formatação condicional de títulos e avisos de interface com base na interação do usuário. | `Titulo_Grafico_Historico`, `Titulo_Grafico_Simulacao` |
 
-Redução da Inadimplência Potencial: Mudança de uma postura reativa para proativa na gestão de riscos de crédito garantido.
+👉 **Consulte o código DAX completo e comentado no arquivo:** [`dax/medidas_simulador.sql`](./dax/medidas_simulador.sql)
 
-6. Aprendizados
-Aplicação avançada de Tabelas de Parâmetros (What-If Analysis) no Power BI para cenários dinâmicos.
+---
 
-Importância da higienização e abstração de modelos de dados corporativos para prototipagem e apresentação de portfólio de forma segura.
+## 💻 Visualização do Painel
+
+*(Insira aqui os prints do seu dashboard higienizado)*
+
+* **Visão Histórica:** Acompanhamento do comportamento da carteira frente à linha de *Stop Loss*.
+* **Painel de Simulação:** Projeção da linha de tendência nos cenários de $Mês +1$ a $Mês +8$ conforme variação dos seletores.
+
+---
+
+## 🎯 Impacto para o Negócio
+
+1. **Prevenção de Desenquadramento:** Permite identificar previamente se uma instituição atingirá o limite de sinistralidade antes do fechamento oficial.
+2. **Tomada de Decisão Baseada em Dados:** Suporta o comitê de crédito na aprovação de novos limites de garantia com base em cenários simulados.
+3. **Maturidade em Governança:** Demonstração prática de manipulação de dados sensíveis com segurança e conformidade corporativa.
