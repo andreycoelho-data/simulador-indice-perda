@@ -319,3 +319,177 @@ VAR vResultado = DIVIDE(vNovoHonrado - vNovoRecuperado, vNovoGarantido, 0)
 
 RETURN
 IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
+
+
+// ============================================================================
+// 17. MEDIDA: index_IP_simulado-3
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+index_IP_simulado-3 = 
+VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
+VAR vDataCorte = [dt_corte]
+VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
+VAR vInicioExpurgo = vDataMesExpurgo
+VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 2) // Mudar para 1, 2, 3 nas próximas
+
+// Expurgos (Saídas reais do sistema)
+VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
+VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
+VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
+
+// Projeções (Entradas 100% garantidas)
+VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 3)
+VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 3)
+VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 3) // Multiplicar por 2, 3, 4 conforme o mês
+
+VAR vResultado = DIVIDE(vNovoHonrado - vNovoRecuperado, vNovoGarantido, 0)
+
+RETURN
+IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
+
+
+// ============================================================================
+// 17. MEDIDA: index_IP_simulado-4
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+index_IP_simulado-4 = 
+VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
+VAR vDataCorte = [dt_corte]
+VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
+VAR vInicioExpurgo = vDataMesExpurgo
+VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 3) // Mudar para 1, 2, 3 nas próximas
+
+// Expurgos (Saídas reais do sistema)
+VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
+VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
+VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
+
+// Projeções (Entradas 100% garantidas)
+VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 4)
+VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 4)
+VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 4) // Multiplicar por 2, 3, 4 conforme o mês
+
+VAR vResultado = DIVIDE(vNovoHonrado - vNovoRecuperado, vNovoGarantido, 0)
+
+RETURN
+IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
+
+
+// ============================================================================
+// 17. MEDIDA: index_IP_simulado-5
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+index_IP_simulado-5 = 
+VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
+VAR vDataCorte = [dt_corte]
+VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
+VAR vInicioExpurgo = vDataMesExpurgo
+VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 4) // Mudar para 1, 2, 3 nas próximas
+
+// Expurgos (Saídas reais do sistema)
+VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
+VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
+VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
+
+// Projeções (Entradas 100% garantidas)
+VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 5)
+VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 5)
+VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 5) // Multiplicar por 2, 3, 4 conforme o mês
+
+VAR vResultado = DIVIDE(vNovoHonrado - vNovoRecuperado, vNovoGarantido, 0)
+
+RETURN
+IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
+
+
+// ============================================================================
+// 17. MEDIDA: index_IP_simulado-6
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+index_IP_simulado-6 = 
+VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
+VAR vDataCorte = [dt_corte]
+VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
+VAR vInicioExpurgo = vDataMesExpurgo
+VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 5) // Mudar para 1, 2, 3 nas próximas
+
+// Expurgos (Saídas reais do sistema)
+VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
+VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
+VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
+
+// Projeções (Entradas 100% garantidas)
+VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 6)
+VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 6)
+VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 6) // Multiplicar por 2, 3, 4 conforme o mês
+
+VAR vResultado = DIVIDE(vNovoHonrado - vNovoRecuperado, vNovoGarantido, 0)
+
+RETURN
+IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
+
+
+// ============================================================================
+// 17. MEDIDA: index_IP_simulado-7
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+index_IP_simulado-7 = 
+VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
+VAR vDataCorte = [dt_corte]
+VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
+VAR vInicioExpurgo = vDataMesExpurgo
+VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 6) // Mudar para 1, 2, 3 nas próximas
+
+// Expurgos (Saídas reais do sistema)
+VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
+VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
+VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
+
+// Projeções (Entradas 100% garantidas)
+VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 7)
+VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 7)
+VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 7) // Multiplicar por 2, 3, 4 conforme o mês
+
+VAR vResultado = DIVIDE(vNovoHonrado - vNovoRecuperado, vNovoGarantido, 0)
+
+RETURN
+IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
+
+
+// ============================================================================
+// 17. MEDIDA: index_IP_simulado-8
+// DESCRIÇÃO: 
+//            
+// ============================================================================
+
+index_IP_simulado-8 = 
+VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
+VAR vDataCorte = [dt_corte]
+VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
+VAR vInicioExpurgo = vDataMesExpurgo
+VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 7) // Mudar para 1, 2, 3 nas próximas
+
+// Expurgos (Saídas reais do sistema)
+VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
+VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
+VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
+
+// Projeções (Entradas 100% garantidas)
+VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 8)
+VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 8)
+VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 8) // Multiplicar por 2, 3, 4 conforme o mês
+
+VAR vResultado = DIVIDE(vNovoHonrado - vNovoRecuperado, vNovoGarantido, 0)
+
+RETURN
+IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
