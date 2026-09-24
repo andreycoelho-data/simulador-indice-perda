@@ -5,6 +5,8 @@
 ![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
 ![Governance](https://img.shields.io/badge/Data_Governance-LGPD-green?style=for-the-badge)
 
+🌐 Language / Idioma: Português | English
+
 ## 📌 Visão Geral do Projeto
 
 Este projeto consiste em uma solução analítica e simuladora desenvolvida em **Power BI** para monitoramento e projeção do **Índice de Perda (IP)** de um Fundo Garantidor de Crédito. 
