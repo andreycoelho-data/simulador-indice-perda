@@ -42,8 +42,8 @@ As regras de negócio e fórmulas de projeção foram documentadas e consolidada
 | **UX & Dinâmica** | Formatação condicional de títulos e avisos de interface com base na interação do usuário. | `Titulo_Grafico_Historico`, `Titulo_Grafico_Simulacao` |
 
 ## 📂 Medidas DAX
-* 📄 **Versão em Português:** [`dax/medidas_simulador.sql`](./dax/medidas_simulador.sql)
-* 📄 **Versão em Inglês:** [`dax/measures_simulator.sql`](./dax/measures_simulator.sql)
+* 📄 **Versão em Português:** [`dax/medidas_simulador.dax`](./dax/medidas_simulador.dax)
+* 📄 **Versão em Inglês:** [`dax/measures_simulator.dax`](./dax/measures_simulator.dax)
 
 ## 💻 Visualização do Painel
 
