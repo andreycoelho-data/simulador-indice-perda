@@ -44,8 +44,8 @@ All business rules, time intelligence patterns, and projection formulas are full
 | **UX & Interface** | Conditional formatting for titles, tooltips, and dynamic UI alerts based on user interactions. | `Titulo_Grafico_Historico`, `Titulo_Grafico_Simulacao` |
 
 👉 **View the fully documented DAX scripts:** 
-* [Portuguese Version (`medidas_simulador.sql`)](./dax/medidas_simulador.sql)
-* [English Version (`measures_simulator.sql`)](./dax/measures_simulator.sql)
+* [Portuguese Version (`medidas_simulador.dax`)](./dax/medidas_simulador.dax)
+* [English Version (`measures_simulator.dax`)](./dax/measures_simulator.dax)
 
 ---
 
