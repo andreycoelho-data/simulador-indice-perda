@@ -1,0 +1,302 @@
+/* ============================================================================
+   PROJECT: Loss Index Simulator (Credit Guarantor Fund)
+   DAX MEASURES & PARAMETERS DOCUMENTATION
+   ============================================================================ */
+
+
+// ============================================================================
+// 01. MEASURE: dt_intv_infr
+// DESCRIPTION: Returns a formatted text date range (dd/mm/yyyy to dd/mm/yyyy) 
+//              representing the 60-month rolling window up to the last recorded 
+//              operation for the selected anonymized bank.
+// ============================================================================
+
+dt_intv_infr = 
+VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
+RETURN
+IF(
+    vBancoSelecionado, 
+    VAR vUltimaDataOp = CALCULATE(MAX(OPERACOES[OPE_DATAINICIO]))
+    VAR vDataFim = IF(NOT ISBLANK(vUltimaDataOp), EOMONTH(vUltimaDataOp, 0))
+    VAR vDataInicio = IF(NOT ISBLANK(vDataFim), EDATE(vDataFim, -60) + 1)
+    RETURN
+    IF(
+        ISBLANK(vDataFim), 
+        "-", 
+        FORMAT(vDataInicio, "dd/mm/yyyy") & " to " & FORMAT(vDataFim, "dd/mm/yyyy")
+    ),
+    "-"
+)
+
+
+// ============================================================================
+// 02. MEASURE: vlr-garantido
+// DESCRIPTION: Total active guarantee value, excluding canceled (12), 
+//              transferred (14), and renegotiated (15) status codes.
+// ============================================================================
+
+vlr-garantido = 
+CALCULATE(
+    SUM(OPERACOES[OPE_VALORGARANTIA]),
+    NOT(OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15})
+)
+
+
+// ============================================================================
+// 03. MEASURE: vlr-garantido_60meses
+// DESCRIPTION: Total cumulative guaranteed value strictly within the 60-month 
+//              rolling historical window.
+// ============================================================================
+
+vlr-garantido_60meses = 
+VAR DataFinal = EOMONTH(MAX(dCalendario[Date]),0)
+VAR DataInicial = EOMONTH(DataFinal,-60)+1
+
+RETURN
+    CALCULATE(
+        [vlr-garantido],
+        dCalendario[Date] >= DataInicial && dCalendario[Date] <= DataFinal
+    )
+
+
+// ============================================================================
+// 04. MEASURE: media-garantia_60meses
+// DESCRIPTION: Monthly average guaranteed value calculated over the 60-month period.
+// ============================================================================
+
+media-garantia_60meses = [vlr-garantido_60meses] / 60
+
+
+// ============================================================================
+// 05. MEASURE: vlr-honrado
+// DESCRIPTION: Total honors paid by the fund, using inactive relationship via 
+//              Effective Honor Date and excluding non-operational statuses (12, 14, 15).
+// ============================================================================
+
+vlr-honrado = 
+CALCULATE(
+    SUM(OPERACOES[OPE_VALOREFETIVOHONRA]),
+    USERELATIONSHIP(
+        dCalendario[Date],
+        OPERACOES[OPE_DATAEFETIVAHONRA]
+    ),
+    NOT(OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15})
+)
+
+
+// ============================================================================
+// 06. MEASURE: vlr-honrado_60meses
+// DESCRIPTION: Cumulative honors effective within the 60-month rolling window.
+// ============================================================================
+
+vlr-honrado_60meses = 
+VAR DataFinal = EOMONTH(MAX(dCalendario[Date]),0)
+VAR DataInicial = EOMONTH(DataFinal,-60)+1
+
+RETURN
+    CALCULATE (
+        [vlr-honrado],
+        USERELATIONSHIP(
+            dCalendario[Date],
+            OPERACOES[OPE_DATAEFETIVAHONRA]
+        ),
+        DATESBETWEEN ( dCalendario[Date], DataInicial, DataFinal )
+    )
+
+
+// ============================================================================
+// 07. MEASURE: media-honra_60 meses
+// DESCRIPTION: Monthly average honors executed over the 60-month period.
+// ============================================================================
+
+media-honra_60 meses = [vlr-honrado_60meses] / 60
+
+
+// ============================================================================
+// 08. MEASURE: vlr-recuperado
+// DESCRIPTION: Total post-honor credit recoveries active via Bank Statement Posting Date.
+// ============================================================================
+
+vlr-recuperado = 
+CALCULATE(
+    SUM(VALOR_RECUPERADO[VLRRECUPERADO]),
+    USERELATIONSHIP(
+        dCalendario[Date],
+        VALOR_RECUPERADO[EXT_DATALANCAMENTO]
+    ),
+    NOT(OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15})
+)
+
+
+// ============================================================================
+// 09. MEASURE: vlr-recuperado_60meses
+// DESCRIPTION: Total asset recoveries strictly within the 60-month rolling window.
+// ============================================================================
+
+vlr-recuperado_60meses = 
+VAR DataFinal = EOMONTH(MAX(dCalendario[Date]),0)
+VAR DataInicial = EOMONTH(DataFinal,-60)+1
+
+RETURN
+    CALCULATE(
+        SUM(VALOR_RECUPERADO[VLRRECUPERADO]),
+        USERELATIONSHIP(
+            dCalendario[Date],
+            VALOR_RECUPERADO[EXT_DATALANCAMENTO]
+        ),
+        DATESBETWEEN ( dCalendario[Date], DataInicial, DataFinal ),
+        NOT(OPERACOES[OPE_CODIGOSITUACAO-SIT_COD_N3] IN {12, 14, 15})
+    )
+
+
+// ============================================================================
+// 10. MEASURE: media-recuperacao_60 meses
+// DESCRIPTION: Monthly average asset recovery over 60 months.
+// ============================================================================
+
+media-recuperacao_60 meses = [vlr-recuperado_60meses] / 60
+
+
+// ============================================================================
+// 11-13. WHAT-IF PARAMETERS
+// DESCRIPTION: User inputs for simulating monthly guarantee additions, honors, and recoveries.
+// ============================================================================
+
+// Valor Simu_Garantia_Mensal = SELECTEDVALUE('Simu_Garantia_Mensal'[Simu_Garantia_Mensal], 0)
+// Valor Simu_Honra_Mensal = SELECTEDVALUE('Simu_Honra_Mensal'[Simu_Honra_Mensal], 0)
+// Valor Simu_Recupe_Mensal = SELECTEDVALUE('Simu_Recupe_Mensal'[Simu_Recupe_Mensal], 0)
+
+
+// ============================================================================
+// 14. MEASURE: index_IP
+// DESCRIPTION: Actual Loss Index (LI / IP). Calculated as Net Loss 
+//              (Honors - Recoveries) divided by Total Guaranteed Value over 60 months.
+// ============================================================================
+
+index_IP = DIVIDE([vlr-honrado_60meses] - [vlr-recuperado_60meses], [vlr-garantido_60meses], 0)
+
+
+// ============================================================================
+// 15. MEASURE: StopLoss_Dinamico_Hibrido
+// DESCRIPTION: Dynamically toggles between institution-specific Stop Loss limit 
+//              and overall Fund threshold based on user filter selection.
+// ============================================================================
+
+StopLoss_Dinamico_Hibrido = 
+VAR vBancoAnonimoSelecionado = SELECTEDVALUE(BANCOS[BCO_NOME_ANONIMO])
+VAR vTemSelecaoUnica = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
+
+RETURN
+IF(
+    vTemSelecaoUnica && NOT ISBLANK(vBancoAnonimoSelecionado),
+    CALCULATE(
+        MAX('Serie_Historica_STOPLOSS IF'[STOP LOSS]),
+        KEEPFILTERS(BANCOS)
+    ),
+    CALCULATE(
+        MAX('Serie_Historica_STOPLOSS GERAL'[STOPLOSS]),
+        REMOVEFILTERS(BANCOS)
+    )
+)
+
+
+// ============================================================================
+// 16. MEASURE: dt_corte
+// DESCRIPTION: Identifies the lowest maximum date among guarantee, honor, and recovery 
+//              tables to establish a safe baseline for projections.
+// ============================================================================
+
+dt_corte = 
+VAR vUltimaGarantia = CALCULATE(MAX(OPERACOES[OPE_DATAINICIO]), ALL(operacoes))
+VAR vUltimaHonra = CALCULATE(MAX(OPERACOES[OPE_DATAEFETIVAHONRA]), ALL(operacoes))
+VAR vUltimaRecup = CALCULATE(MAX(VALOR_RECUPERADO[EXT_DATALANCAMENTO]), ALL(VALOR_RECUPERADO))
+
+VAR vDataMinimaDasMaximas = MINX({vUltimaGarantia, vUltimaHonra, vUltimaRecup}, [Value])
+RETURN vDataMinimaDasMaximas
+
+
+// ============================================================================
+// 17. MEASURE: IP_Linha_Tendencia
+// DESCRIPTION: Feeds the projection line chart based on selected Scenario ("Current" to "Month +8").
+// ============================================================================
+
+IP_Linha_Tendencia = 
+VAR vBancoSelecionado = HASONEVALUE(bancos[BCO_NOME_ANONIMO])
+VAR vSomaParametros = 
+    [Valor Simu_Honra_Mensal] + 
+    [Valor Simu_Recupe_Mensal] + 
+    [Valor Simu_Garantia_Mensal]
+
+VAR vCenario = SELECTEDVALUE('Tabela_Tendencia-SIMULADOR'[Cenário])
+
+RETURN
+IF(
+    vBancoSelecionado, 
+    IF(
+        vSomaParametros = 0 && vCenario <> "Atual", 
+        BLANK(),
+        SWITCH( vCenario,
+            "Atual", [index_IP],
+            "Mês +1", [index_IP_simulado-1],
+            "Mês +2", [index_IP_simulado-2],
+            "Mês +3", [index_IP_simulado-3],
+            "Mês +4", [index_IP_simulado-4],
+            "Mês +5", [index_IP_simulado-5],
+            "Mês +6", [index_IP_simulado-6],
+            "Mês +7", [index_IP_simulado-7],
+            "Mês +8", [index_IP_simulado-8],
+            BLANK()
+        )
+    ),
+    BLANK() 
+)
+
+
+// ============================================================================
+// 18 TO 25. SIMULATED PROJECTION MEASURES (Month +1 to Month +8)
+// MODEL LOGIC: Offloads oldest historical month from the 60-month window 
+//              and incorporates multiplied What-If parameters.
+// ============================================================================
+
+// --- MONTH +1 ---
+index_IP_simulado-1 = 
+VAR vBancoSelecionado = HASONEVALUE(BANCOS[BCO_NOME_ANONIMO])
+VAR vDataCorte = [dt_corte]
+VAR vDataMesExpurgo = EDATE(DATE(YEAR(vDataCorte), MONTH(vDataCorte), 1), -59)
+VAR vInicioExpurgo = vDataMesExpurgo
+VAR vFimExpurgo = EOMONTH(vDataMesExpurgo, 0)
+
+VAR vHonraSair = CALCULATE(SUM(operacoes[OPE_VALOREFETIVOHONRA]), operacoes[OPE_DATAEFETIVAHONRA] >= vInicioExpurgo, operacoes[OPE_DATAEFETIVAHONRA] <= vFimExpurgo)
+VAR vRecupSair = CALCULATE(SUM(VALOR_RECUPERADO[VLRRECUPERADO]), VALOR_RECUPERADO[EXT_DATALANCAMENTO] >= vInicioExpurgo, VALOR_RECUPERADO[EXT_DATALANCAMENTO] <= vFimExpurgo)
+VAR vGarantiaSair = CALCULATE(SUM(operacoes[OPE_VALORGARANTIA]), operacoes[OPE_DATAINICIO] >= vInicioExpurgo, operacoes[OPE_DATAINICIO] <= vFimExpurgo)
+
+VAR vNovoHonrado = ([vlr-honrado_60meses] - vHonraSair) + ([Valor Simu_Honra_Mensal] * 1)
+VAR vNovoRecuperado = ([vlr-recuperado_60meses] - vRecupSair) + ([Valor Simu_Recupe_Mensal] * 1)
+VAR vNovoGarantido = ([vlr-garantido_60meses] - vGarantiaSair) + ([Valor Simu_Garantia_Mensal] * 1)
+
+VAR vResultado = DIVIDE(vNovoHonrado - vNovoRecuperado, vNovoGarantido, 0)
+
+RETURN
+IF(vBancoSelecionado && NOT ISBLANK(vDataCorte), vResultado, "-")
+
+
+// ============================================================================
+// 26-27. DYNAMIC UI TITLES
+// ============================================================================
+
+Titulo_Grafico_Historico = 
+VAR vBanco = SELECTEDVALUE(BANCOS[BCO_NOME_ANONIMO])
+
+RETURN
+IF(
+    ISBLANK(vBanco),
+    "Historical Loss Index - FUND CONSOLIDATED",
+    "Historical Loss Index - " & vBanco
+)
+
+Titulo_Grafico_Simulacao = 
+IF(
+    [Valor Simu_Honra_Mensal] + [Valor Simu_Recupe_Mensal] + [Valor Simu_Garantia_Mensal] = 0,
+    "Awaiting What-If Parameters for Loss Index Projection...",
+    "Loss Index Trend Projection (Next 8 Months)"
+)
