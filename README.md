@@ -5,7 +5,7 @@
 ![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
 ![Governance](https://img.shields.io/badge/Data_Governance-LGPD-green?style=for-the-badge)
 
-🌐 Language / Idioma: Português | English
+🌐 **Idioma / Language:** [Português](README.md) | [English](README_EN.md)
 
 ## 📌 Visão Geral do Projeto
 
@@ -41,9 +41,9 @@ As regras de negócio e fórmulas de projeção foram documentadas e consolidada
 | **Motor de Projeção** | Cálculo de expurgo retroativo + incremento dos parâmetros *What-If* para o horizonte de 8 meses. | `IP_Linha_Tendencia`, `index_IP_simulado-1` a `8` |
 | **UX & Dinâmica** | Formatação condicional de títulos e avisos de interface com base na interação do usuário. | `Titulo_Grafico_Historico`, `Titulo_Grafico_Simulacao` |
 
-👉 **Consulte o código DAX completo e comentado no arquivo:** [`dax/medidas_simulador.sql`](./dax/medidas_simulador.sql)
-
----
+## 📂 Medidas DAX
+* 📄 **Versão em Português:** [`dax/medidas_simulador.sql`](./dax/medidas_simulador.sql)
+* 📄 **Versão em Inglês:** [`dax/measures_simulator.sql`](./dax/measures_simulator.sql)
 
 ## 💻 Visualização do Painel
 
